@@ -70,6 +70,7 @@ setup(
         'console_scripts': [
             'jupyter-kernelspec = jupyter_client.kernelspecapp:KernelSpecApp.launch_instance',
             'jupyter-run = jupyter_client.runapp:RunApp.launch_instance',
+            'jupyter-kernel = jupyter_client.kernelapp:main',
         ],
         'jupyter_client.kernel_providers' : [
             'spec = jupyter_client.discovery:KernelSpecProvider',
