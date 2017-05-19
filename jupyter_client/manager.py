@@ -26,6 +26,15 @@ from traitlets import Type
 from traitlets import Unicode
 from traitlets.utils.importstring import import_item  # type: ignore
 
+from ipython_genutils.importstring import import_item
+from .localinterfaces import is_local_ip, local_ips
+from traitlets import (
+    Any, Float, Instance, Unicode, List, Bool, Type, DottedObjectName, Dict
+)
+from jupyter_client import (
+    launch_kernel,
+    kernelspec,
+)
 from .connect import ConnectionFileMixin
 from .managerabc import KernelManagerABC
 from .provisioning import KernelProvisionerBase
@@ -138,13 +147,13 @@ class KernelManager(ConnectionFileMixin):
             self._kernel_spec = self.kernel_spec_manager.get_kernel_spec(self.kernel_name)
         return self._kernel_spec
 
-    cache_ports: Bool = Bool(
-        help="True if the MultiKernelManager should cache ports for this KernelManager instance"
+    kernel_cmd = List(Unicode(),
+        help="""The Popen Command to launch the kernel."""
     )
 
-    @default("cache_ports")
-    def _default_cache_ports(self) -> bool:
-        return self.transport == "tcp"
+    extra_env = Dict(
+        help="""Extra environment variables to be set for the kernel."""
+    )
 
     @property
     def ready(self) -> Future:
@@ -302,26 +311,24 @@ class KernelManager(ConnectionFileMixin):
         self.kernel_id = self.kernel_id or kw.pop('kernel_id', str(uuid.uuid4()))
         # save kwargs for use in restart
         self._launch_args = kw.copy()
-        if self.provisioner is None:  # will not be None on restarts
-            self.provisioner = KPF.instance(parent=self.parent).create_provisioner_instance(
-                self.kernel_id,
-                self.kernel_spec,
-                parent=self,
-            )
-        kw = await self.provisioner.pre_launch(**kw)
-        kernel_cmd = kw.pop('cmd')
-        return kernel_cmd, kw
-
-    pre_start_kernel = run_sync(_async_pre_start_kernel)
-
-    async def _async_post_start_kernel(self, **kw) -> None:
-        """Performs any post startup tasks relative to the kernel.
-
-        Parameters
-        ----------
-        `**kw` : optional
-             keyword arguments that were used in the kernel process's launch.
-        """
+        # build the Popen cmd
+        extra_arguments = kw.pop('extra_arguments', [])
+        kernel_cmd = self.format_kernel_cmd(extra_arguments=extra_arguments)
+        env = kw.pop('env', os.environ).copy()
+        # Don't allow PYTHONEXECUTABLE to be passed to kernel process.
+        # If set, it can bork all the things.
+        env.pop('PYTHONEXECUTABLE', None)
+        if not self.kernel_cmd:
+            # If kernel_cmd has been set manually, don't refer to a kernel spec
+            # Environment variables from kernel spec are added to os.environ
+            env.update(self.kernel_spec.env or {})
+        elif self.extra_env:
+            env.update(self.extra_env)
+        
+        # launch the kernel subprocess
+        self.log.debug("Starting kernel: %s", kernel_cmd)
+        self.kernel = self._launch_kernel(kernel_cmd, env=env,
+                                    **kw)
         self.start_restarter()
         self._connect_control_socket()
         assert self.provisioner is not None
