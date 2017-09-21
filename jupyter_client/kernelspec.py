@@ -8,21 +8,15 @@ import re
 import shutil
 import warnings
 
-from jupyter_core.paths import jupyter_data_dir  # type: ignore
-from jupyter_core.paths import jupyter_path
-from jupyter_core.paths import SYSTEM_JUPYTER_PATH
-from traitlets import Bool  # type: ignore
-from traitlets import CaselessStrEnum
-from traitlets import Dict
-from traitlets import HasTraits
-from traitlets import List
-from traitlets import observe
-from traitlets import Set
-from traitlets import Type
-from traitlets import Unicode
-from traitlets.config import LoggingConfigurable  # type: ignore
+pjoin = os.path.join
 
-from .provisioning import KernelProvisionerFactory as KPF
+from ipython_genutils.py3compat import PY3
+from traitlets import (
+    HasTraits, List, Unicode, Dict, Set, Bool, Type, CaselessStrEnum
+)
+from traitlets.config import LoggingConfigurable
+
+from jupyter_core.paths import jupyter_data_dir, jupyter_path, SYSTEM_JUPYTER_PATH
 
 pjoin = os.path.join
 
@@ -35,7 +29,9 @@ class KernelSpec(HasTraits):
     language = Unicode()
     env = Dict()
     resource_dir = Unicode()
-    interrupt_mode = CaselessStrEnum(["message", "signal"], default_value="signal")
+    interrupt_mode = CaselessStrEnum(
+        ['message', 'signal'], default_value='signal'
+    )
     metadata = Dict()
 
     @classmethod
@@ -50,14 +46,13 @@ class KernelSpec(HasTraits):
         return cls(resource_dir=resource_dir, **kernel_dict)
 
     def to_dict(self):
-        d = dict(
-            argv=self.argv,
-            env=self.env,
-            display_name=self.display_name,
-            language=self.language,
-            interrupt_mode=self.interrupt_mode,
-            metadata=self.metadata,
-        )
+        d = dict(argv=self.argv,
+                 env=self.env,
+                 display_name=self.display_name,
+                 language=self.language,
+                 interrupt_mode=self.interrupt_mode,
+                 metadata=self.metadata,
+                )
 
         return d
 
@@ -389,7 +384,7 @@ class KernelSpecManager(LoggingConfigurable):
             )
 
         destination = self._get_destination_dir(kernel_name, user=user, prefix=prefix)
-        self.log.debug("Installing kernelspec in %s", destination)
+        self.log.debug('Installing kernelspec in %s', destination)
 
         kernel_dir = os.path.dirname(destination)
         if kernel_dir not in self.kernel_dirs:
