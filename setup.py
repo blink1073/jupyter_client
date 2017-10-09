@@ -53,11 +53,18 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
     ],
-    python_requires='>=3.6.1',
-    install_requires=requirements,
-    extras_require={
-        'test': requirements_test,
-        'doc': requirements_doc,
+    install_requires = [
+        'traitlets',
+        'jupyter_core',
+        'pyzmq>=13',
+        'python-dateutil>=2.1',
+        'entrypoints',
+    ],
+    extras_require   = {
+        'test': ['ipykernel', 'ipython', 'mock', 'pytest'],
+    },
+    cmdclass         = {
+        'bdist_egg': bdist_egg if 'bdist_egg' in sys.argv else bdist_egg_disabled,
     },
     entry_points={
         'console_scripts': [
