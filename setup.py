@@ -64,7 +64,7 @@ setup(
             'jupyter-kernelspec = jupyter_client.kernelspecapp:KernelSpecApp.launch_instance',
             'jupyter-run = jupyter_client.runapp:RunApp.launch_instance',
         ],
-        'jupyter_client.kernel_finders' : [
+        'jupyter_client.kernel_providers' : [
             'spec = jupyter_client.discovery:KernelSpecFinder',
             'pyimport = jupyter_client.discovery:IPykernelFinder',
         ]
