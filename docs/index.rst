@@ -23,7 +23,7 @@ with Jupyter kernels.
 
    kernels
    wrapperkernels
-   provisioning
+   kernel_providers
 
 .. toctree::
    :maxdepth: 2
