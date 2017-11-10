@@ -9,23 +9,24 @@ import asyncio
 import time
 import warnings
 
-from traitlets import Instance
+# Copyright (c) Jupyter Development Team.
+# Distributed under the terms of the Modified BSD License.
+
+from __future__ import absolute_import
+import warnings
+
 from zmq.eventloop import ioloop
 
 from jupyter_client.restarter import KernelRestarter
 from jupyter_client.utils import run_sync
 
-
 class IOLoopKernelRestarter(KernelRestarter):
     """Monitor and autorestart a kernel."""
 
-    loop = Instance("tornado.ioloop.IOLoop")
-
+    loop = Instance('tornado.ioloop.IOLoop')
     def _loop_default(self):
-        warnings.warn(
-            "IOLoopKernelRestarter.loop is deprecated in jupyter-client 5.2",
-            DeprecationWarning,
-            stacklevel=4,
+        warnings.warn("IOLoopKernelRestarter.loop is deprecated in jupyter-client 5.2",
+            DeprecationWarning, stacklevel=4,
         )
         return ioloop.IOLoop.current()
 
@@ -39,8 +40,7 @@ class IOLoopKernelRestarter(KernelRestarter):
             else:
                 cb = self.poll
             self._pcallback = ioloop.PeriodicCallback(
-                cb,
-                1000 * self.time_to_dead,
+                self.poll, 1000*self.time_to_dead,
             )
             self._pcallback.start()
 

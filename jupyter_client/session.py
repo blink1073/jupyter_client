@@ -227,6 +227,7 @@ class SessionFactory(LoggingConfigurable):
 
     loop = Instance("tornado.ioloop.IOLoop")
 
+    loop = Instance('tornado.ioloop.IOLoop')
     def _loop_default(self):
         return IOLoop.current()
 
