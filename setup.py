@@ -62,6 +62,7 @@ setup(
     ],
     extras_require   = {
         'test': ['ipykernel', 'ipython', 'mock', 'pytest'],
+        'test:python_version == "3.3"': ['pytest<3.3.0'],
     },
     cmdclass         = {
         'bdist_egg': bdist_egg if 'bdist_egg' in sys.argv else bdist_egg_disabled,
