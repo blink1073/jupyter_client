@@ -59,6 +59,7 @@ setup(
         'pyzmq>=13',
         'python-dateutil>=2.1',
         'entrypoints',
+        'tornado>=4.1',
     ],
     extras_require   = {
         'test': ['ipykernel', 'ipython', 'mock'],
