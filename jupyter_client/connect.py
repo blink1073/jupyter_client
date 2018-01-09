@@ -39,25 +39,20 @@ from traitlets.config import LoggingConfigurable  # type: ignore
 from traitlets.config import SingletonConfigurable
 
 from .localinterfaces import localhost
-from .utils import _filefind
+from ipython_genutils.path import filefind
+from ipython_genutils.py3compat import (
+    bytes_to_str, cast_bytes, cast_bytes_py2, string_types,
+)
+from traitlets import (
+    Bool, Integer, Unicode, CaselessStrEnum, Instance, Type,
+)
+from jupyter_core.paths import jupyter_data_dir, jupyter_runtime_dir
 
-# Define custom type for kernel connection info
-KernelConnectionInfo = Dict[str, Union[int, str, bytes]]
 
-
-def write_connection_file(
-    fname: Optional[str] = None,
-    shell_port: Union[Integer, Int, int] = 0,
-    iopub_port: Union[Integer, Int, int] = 0,
-    stdin_port: Union[Integer, Int, int] = 0,
-    hb_port: Union[Integer, Int, int] = 0,
-    control_port: Union[Integer, Int, int] = 0,
-    ip: str = "",
-    key: bytes = b"",
-    transport: str = "tcp",
-    signature_scheme: str = "hmac-sha256",
-    kernel_name: str = "",
-) -> Tuple[str, KernelConnectionInfo]:
+def write_connection_file(fname=None, shell_port=0, iopub_port=0, stdin_port=0, hb_port=0,
+                          control_port=0, ip='', key=b'', transport='tcp',
+                          signature_scheme='hmac-sha256', kernel_name=''
+                          ):
     """Generates a JSON config file, including the selection of random ports.
 
     Parameters
@@ -227,13 +222,13 @@ def find_connection_file(
         pat = filename
     else:
         # accept any substring match
-        pat = "*%s*" % filename
+        pat = '*%s*' % filename
 
     matches = []
     for p in path:
         matches.extend(glob.glob(os.path.join(p, pat)))
 
-    matches = [os.path.abspath(m) for m in matches]
+    matches = [ os.path.abspath(m) for m in matches ]
     if not matches:
         raise IOError("Could not find %r in %r" % (filename, path))
     elif len(matches) == 1:
@@ -273,9 +268,8 @@ def tunnel_to_kernel(
     (shell, iopub, stdin, hb, control) : ints
         The five ports on localhost that have been forwarded to the kernel.
     """
-    from .ssh import tunnel
-
-    if isinstance(connection_info, str):
+    from jupyter_core.ssh import tunnel
+    if isinstance(connection_info, string_types):
         # it's a path, unpack it
         with open(connection_info) as f:
             connection_info = json.loads(f.read())
