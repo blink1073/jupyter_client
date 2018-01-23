@@ -1,7 +1,9 @@
 """Tests for the KernelSpecManager"""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+
 import copy
+import io
 import json
 import os
 import sys
@@ -178,7 +180,7 @@ class KernelSpecTests(unittest.TestCase):
         class MyKSM(kernelspec.KernelSpecManager):
             def get_kernel_spec(self, name):
                 spec = copy.copy(native_kernel)
-                if name == "fake":
+                if name == 'fake':
                     spec.name = name
                     spec.resource_dir = resource_dir
                 elif name == native_name:
@@ -189,7 +191,7 @@ class KernelSpecTests(unittest.TestCase):
 
             def find_kernel_specs(self):
                 return {
-                    "fake": resource_dir,
+                    'fake': resource_dir,
                     native_name: native_kernel.resource_dir,
                 }
 
@@ -197,4 +199,4 @@ class KernelSpecTests(unittest.TestCase):
         # find_kernel_specs and get_kernel_spec are defined
         myksm = MyKSM()
         specs = myksm.get_all_specs()
-        assert sorted(specs) == ["fake", native_name]
+        assert sorted(specs) == ['fake', native_name]
