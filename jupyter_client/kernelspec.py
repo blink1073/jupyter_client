@@ -313,9 +313,10 @@ class KernelSpecManager(LoggingConfigurable):
                     # and get_kernel_spec, but not the newer get_all_specs
                     spec = self.get_kernel_spec(kname)
 
-                res[kname] = {"resource_dir": resource_dir, "spec": spec.to_dict()}
-            except NoSuchKernel:
-                pass  # The appropriate warning has already been logged
+                res[kname] = {
+                    "resource_dir": resource_dir,
+                    "spec": spec.to_dict()
+                }
             except Exception:
                 self.log.warning("Error loading kernelspec %r", kname, exc_info=True)
         return res
