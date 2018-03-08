@@ -4,6 +4,8 @@ replies.
 import asyncio
 import atexit
 import errno
+import sys
+from threading import Thread, Event
 import time
 from threading import Event
 from threading import Thread
@@ -72,7 +74,6 @@ class ThreadedZMQSocketChannel(object):
             self.stream.on_recv(self._handle_recv)
             evt.set()
 
-        assert self.ioloop is not None
         self.ioloop.add_callback(setup_stream)
         evt.wait()
 
@@ -184,7 +185,7 @@ class IOLoopThread(Thread):
     ioloop = None
 
     def __init__(self):
-        super().__init__()
+        super(IOLoopThread, self).__init__()
         self.daemon = True
 
     @staticmethod
@@ -195,7 +196,7 @@ class IOLoopThread(Thread):
         if IOLoopThread is not None:
             IOLoopThread._exiting = True
 
-    def start(self) -> None:
+    def start(self):
         """Start the IOLoop thread
 
         Don't return until self.ioloop is defined,
@@ -205,12 +206,14 @@ class IOLoopThread(Thread):
         Thread.start(self)
         self._start_event.wait()
 
-    def run(self) -> None:
+    def run(self):
         """Run my loop, ignoring EINTR events in the poller"""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        if 'asyncio' in sys.modules:
+            # tornado may be using asyncio,
+            # ensure an eventloop exists for this thread
+            import asyncio
+            asyncio.set_event_loop(asyncio.new_event_loop())
         self.ioloop = ioloop.IOLoop()
-        self.ioloop._asyncio_event_loop = loop
         # signal that self.ioloop is defined
         self._start_event.set()
         while True:
@@ -259,21 +262,14 @@ class ThreadedKernelClient(KernelClient):
 
     ioloop_thread = Instance(IOLoopThread, allow_none=True)
 
-    def start_channels(
-        self,
-        shell: bool = True,
-        iopub: bool = True,
-        stdin: bool = True,
-        hb: bool = True,
-        control: bool = True,
-    ) -> None:
+    def start_channels(self, shell=True, iopub=True, stdin=True, hb=True):
         self.ioloop_thread = IOLoopThread()
         self.ioloop_thread.start()
 
         if shell:
             self.shell_channel._inspect = self._check_kernel_info_reply
 
-        super().start_channels(shell, iopub, stdin, hb, control)
+        super(ThreadedKernelClient, self).start_channels(shell, iopub, stdin, hb)
 
     def _check_kernel_info_reply(self, msg: Dict[str, Any]) -> None:
         """This is run in the ioloop thread when the kernel info reply is received"""
