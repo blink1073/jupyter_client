@@ -8,50 +8,54 @@ from setuptools import setup
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-with open(os.path.join(here, 'README.md'), 'r') as f:
-    long_description = f.read()
+version_ns = {}
+with open(os.path.join(here, 'jupyter_client', '_version.py')) as f:
+    exec(f.read(), {}, version_ns)
 
-with open(os.path.join(here, 'requirements.txt'), 'r') as f:
-    requirements = f.read().splitlines()
+from setuptools.command.bdist_egg import bdist_egg
 
-with open(os.path.join(here, 'requirements-test.txt'), 'r') as f:
-    requirements_test = f.read().splitlines()
+class bdist_egg_disabled(bdist_egg):
+    """Disabled version of bdist_egg
 
-with open(os.path.join(here, 'requirements-doc.txt'), 'r') as f:
-    requirements_doc = f.read().splitlines()
+    Prevents setup.py install from performing setuptools' default easy_install,
+    which it should never ever do.
+    """
+    def run(self):
+        sys.exit("Aborting implicit building of eggs. Use `pip install .` to install from source.")
 
-setup(
-    name='jupyter_client',
-    packages=find_packages(exclude=["docs", "docs.*", "tests", "tests.*"]),
-    description='Jupyter protocol implementation and client libraries',
-    long_description=long_description,
-    long_description_content_type='text/markdown',
-    author='Jupyter Development Team',
-    author_email='jupyter@googlegroups.com',
-    url='https://jupyter.org',
-    license='BSD',
-    license_file='COPYING.md',
-    platforms="Linux, Mac OS X, Windows",
-    keywords=['Interactive', 'Interpreter', 'Shell', 'Web'],
-    project_urls={
+
+setup_args = dict(
+    name            = name,
+    version         = version_ns['__version__'],
+    packages        = packages,
+    description     = 'Jupyter protocol implementation and client libraries',
+    author          = 'Jupyter Development Team',
+    author_email    = 'jupyter@googlegroups.com',
+    url             = 'https://jupyter.org',
+    license         = 'BSD',
+    platforms       = "Linux, Mac OS X, Windows",
+    keywords        = ['Interactive', 'Interpreter', 'Shell', 'Web'],
+    project_urls    = {
         'Documentation': 'https://jupyter-client.readthedocs.io',
         'Source': 'https://github.com/jupyter/jupyter_client/',
         'Tracker': 'https://github.com/jupyter/jupyter_client/issues',
     },
-    classifiers=[
+    classifiers     = [
         'Framework :: Jupyter',
         'Intended Audience :: Developers',
         'Intended Audience :: Education',
         'Intended Audience :: System Administrators',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
-        'Operating System :: OS Independent',
+        'Operating System :: MacOS',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
     ],
     install_requires = [
         'traitlets',
@@ -61,6 +65,7 @@ setup(
         'entrypoints',
         'tornado>=4.1',
     ],
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, <4',
     extras_require   = {
         'test': ['ipykernel', 'ipython', 'mock'],
         'test:python_version == "3.3"': ['pytest<3.3.0'],
