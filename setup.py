@@ -1,6 +1,30 @@
 #!/usr/bin/env python
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+
+from __future__ import print_function
+
+# the name of the project
+name = 'jupyter_client'
+
+#-----------------------------------------------------------------------------
+# Minimal Python version sanity check
+#-----------------------------------------------------------------------------
+
+import sys
+
+v = sys.version_info
+if v[:2] < (2,7) or (v[0] >= 3 and v[:2] < (3,4)):
+    error = "ERROR: %s requires Python version 2.7 or 3.4 or above." % name
+    print(error, file=sys.stderr)
+    sys.exit(1)
+
+PY3 = (sys.version_info[0] >= 3)
+
+#-----------------------------------------------------------------------------
+# get on with it
+#-----------------------------------------------------------------------------
+
 import os
 
 from setuptools import find_packages
@@ -60,10 +84,9 @@ setup_args = dict(
         'entrypoints',
         'tornado>=4.1',
     ],
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
     extras_require   = {
         'test': ['ipykernel', 'ipython', 'mock'],
-        'test:python_version == "3.3"': ['pytest>=3,<3.3.0'],
         'test:(python_version >= "3.4" or python_version == "2.7")': ['pytest'],
     },
     cmdclass         = {
