@@ -198,7 +198,7 @@ class KernelClient(ConnectionFileMixin):
                         self._handle_kernel_info_reply(msg)
                         break
 
-            if not await ensure_async(self.is_alive()):
+            if not await ensure_async(self._async_is_alive()):
                 raise RuntimeError("Kernel died before replying to kernel_info")
 
             # Check if current time is ready check time plus timeout
@@ -403,7 +403,7 @@ class KernelClient(ConnectionFileMixin):
         if isinstance(self.parent, KernelManager):
             # This KernelClient was created by a KernelManager,
             # we can ask the parent KernelManager:
-            return await ensure_async(self.parent.is_alive())
+            return await ensure_async(self.parent._async_is_alive())
         if self._hb_channel is not None:
             # We don't have access to the KernelManager,
             # so we use the heartbeat.
