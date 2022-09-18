@@ -13,22 +13,7 @@ from typing import Optional
 
 
 class TaskRunner:
-    """A singleton task runner that runs an asyncio event loop on a background thread."""
-
-    __instance = None
-
-    @staticmethod
-    def getInstance():
-        if TaskRunner.__instance is None:
-            TaskRunner()
-        assert TaskRunner.__instance is not None
-        return TaskRunner.__instance
-
     def __init__(self):
-        if TaskRunner.__instance is not None:
-            raise Exception("This class is a singleton!")
-        else:
-            TaskRunner.__instance = self
         self.__io_loop: Optional[asyncio.AbstractEventLoop] = None
         self.__runner_thread: Optional[threading.Thread] = None
         self.__lock = threading.Lock()
@@ -58,13 +43,18 @@ class TaskRunner:
         return fut.result()
 
 
+_runners = {}
+
+
 def run_sync(coro):
     def wrapped(*args, **kwargs):
         inner = coro(*args, **kwargs)
         try:
             loop = asyncio.get_running_loop()
-            print('yep', threading.current_thread().name)
-            return TaskRunner.getInstance().run(inner)
+            name = threading.current_thread().name
+            if name not in _runners:
+                _runners[name] = TaskRunner()
+            return _runners[name].run(inner)
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
