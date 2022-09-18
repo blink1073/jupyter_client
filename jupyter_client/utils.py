@@ -54,6 +54,7 @@ def run_sync(coro):
             name = threading.current_thread().name
             if name not in _runners:
                 _runners[name] = TaskRunner()
+            print(name, coro)
             return _runners[name].run(inner)
         except RuntimeError:
             loop = asyncio.new_event_loop()
