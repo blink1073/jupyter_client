@@ -45,7 +45,6 @@ class _TaskRunner:
 
 
 _runner_map = {}
-_loop_map = {}
 
 
 def run_sync(coro):
@@ -62,11 +61,8 @@ def run_sync(coro):
         except RuntimeError:
             pass
 
-        # Run the loop for this thread.
-        if name not in _loop_map:
-            _loop_map[name] = asyncio.new_event_loop()
-        loop = _loop_map[name]
-        return loop.run_until_complete(inner)
+        # Run a new loop for this thread.
+        return loop.run_until_complete(asyncio.new_event_loop())
 
     wrapped.__doc__ = coro.__doc__
     return wrapped
