@@ -13,7 +13,7 @@ from jupyter_core.application import JupyterApp, base_aliases, base_flags
 from traitlets import Bool, Dict, Instance, List, Unicode
 from traitlets.config.application import Application
 
-from . import __version__
+from ._version import __version__
 from .kernelspec import KernelSpecManager
 from .provisioning.factory import KernelProvisionerFactory
 
@@ -334,7 +334,7 @@ class KernelSpecApp(Application):
             self.print_subcommands()
             self.exit(1)
         else:
-            return self.subapp.start()
+            return self.subapp.start()  # type:ignore[no-any-return]
 
 
 if __name__ == "__main__":

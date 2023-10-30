@@ -43,7 +43,7 @@ def kernel_method(f: t.Callable) -> t.Callable:
         # such as logging messages
         f(self, kernel_id, *args, **kwargs)
         # return the method result
-        return r
+        return r  # type:ignore[no-any-return]
 
     return wrapped
 
@@ -84,7 +84,7 @@ class MultiKernelManager(LoggingConfigurable):
                     self.context = self._context_default()
                 kwargs.setdefault("context", self.context)
             km = kernel_manager_ctor(*args, **kwargs)
-            return km
+            return t.cast(KernelManager, km)
 
         return create_kernel_manager
 
@@ -112,7 +112,7 @@ class MultiKernelManager(LoggingConfigurable):
     connection_dir = Unicode("")
     external_connection_dir = Unicode(None, allow_none=True)
 
-    _kernels = Dict()
+    _kernels: dict[str, KernelManager] = Dict()  # type:ignore[assignment]
 
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
@@ -223,7 +223,7 @@ class MultiKernelManager(LoggingConfigurable):
         .. version-added: 8.5
         """
         if kernel_id in self:
-            self._kernels[kernel_id].update_env(env)
+            self._kernels[kernel_id].update_env(env)  # type:ignore[misc]
 
     async def _add_kernel_when_ready(
         self, kernel_id: str, km: KernelManager, kernel_awaitable: t.Awaitable
@@ -351,7 +351,7 @@ class MultiKernelManager(LoggingConfigurable):
     def cleanup_resources(self, kernel_id: str, restart: bool = False) -> None:
         """Clean up a kernel's resources"""
 
-    def remove_kernel(self, kernel_id: str) -> KernelManager:
+    def remove_kernel(self, kernel_id: str) -> KernelManager | None:
         """remove a kernel from our mapping.
 
         Mainly so that a kernel can be removed if it is already dead,
@@ -372,7 +372,7 @@ class MultiKernelManager(LoggingConfigurable):
         if self._using_pending_kernels():
             for km in kms:
                 try:
-                    await km.ready
+                    await km.ready  # type:ignore[misc]
                 except asyncio.CancelledError:
                     self._pending_kernels[km.kernel_id].cancel()
                 except Exception:

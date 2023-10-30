@@ -378,7 +378,7 @@ class ConnectionFileMixin(LoggingConfigurable):
         return [getattr(self, name) for name in port_names]
 
     # The Session to use for communication with the kernel.
-    session = Instance("jupyter_client.session.Session")
+    session: Session = Instance("jupyter_client.session.Session")  # type:ignore[assignment]
 
     def _session_default(self) -> Session:
         from .session import Session
@@ -709,7 +709,7 @@ class LocalPortCache(SingletonConfigurable):
             # We prevent two kernels to have the same ports.
             if port not in self.currently_used_ports:
                 self.currently_used_ports.add(port)
-                return port
+                return port  # type:ignore[no-any-return]
 
     def return_port(self, port: int) -> None:
         if port in self.currently_used_ports:  # Tolerate uncached ports

@@ -106,7 +106,7 @@ class KernelManager(ConnectionFileMixin):
 
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         """Initialize a kernel manager."""
-        self._owns_kernel = kwargs.pop("owns_kernel", True)
+        self._owns_kernel: bool = kwargs.pop("owns_kernel", True)
         super().__init__(**kwargs)
         self._shutdown_status = _ShutdownStatus.Unset
         self._attempted_start = False
@@ -126,11 +126,11 @@ class KernelManager(ConnectionFileMixin):
     client_class: DottedObjectName = DottedObjectName(
         "jupyter_client.blocking.BlockingKernelClient"
     )
-    client_factory: Type = Type(klass=KernelClient)
+    client_factory = Type(klass=KernelClient)
 
     @default("client_factory")
     def _client_factory_default(self) -> Type:
-        return import_item(self.client_class)
+        return import_item(self.client_class)  # type:ignore[no-any-return]
 
     @observe("client_class")
     def _client_class_changed(self, change: t.Dict[str, DottedObjectName]) -> None:
@@ -192,7 +192,7 @@ class KernelManager(ConnectionFileMixin):
 
     @default("cache_ports")
     def _default_cache_ports(self) -> bool:
-        return self.transport == "tcp"
+        return bool(self.transport == "tcp")
 
     @property
     def ready(self) -> t.Union[CFuture, Future]:
@@ -646,8 +646,8 @@ class KernelManager(ConnectionFileMixin):
                 self._connect_control_socket()
                 self.session.send(self._control_socket, msg)
         else:
-            msg = "Cannot interrupt kernel. No kernel is running!"
-            raise RuntimeError(msg)
+            err_msg = "Cannot interrupt kernel. No kernel is running!"
+            raise RuntimeError(err_msg)
 
     interrupt_kernel = run_sync(_async_interrupt_kernel)
 

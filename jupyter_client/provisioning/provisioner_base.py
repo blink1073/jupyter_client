@@ -5,7 +5,8 @@ import os
 from abc import ABC, ABCMeta, abstractmethod
 from typing import Any, Dict, List, Optional, Union
 
-from traitlets.config import Instance, LoggingConfigurable, Unicode
+from traitlets import Instance, Unicode
+from traitlets.config import LoggingConfigurable
 
 from ..connect import KernelConnectionInfo
 

@@ -56,6 +56,32 @@ PICKLE_PROTOCOL = pickle.DEFAULT_PROTOCOL
 
 utc = timezone.utc
 
+if t.TYPE_CHECKING:
+    from typing_extensions import TypedDict
+
+    class EmptyDict(TypedDict):
+        pass
+
+    class Header(TypedDict):
+        version: str
+        date: datetime
+        msg_id: str
+        msg_type: str
+        username: str
+        session: Session | str
+
+    class MessageType(TypedDict):
+        header: Header
+        parent_header: Header | EmptyDict
+        msg_id: str
+        msg_type: str
+        content: t.Any
+        metadata: dict[str, t.Any]
+        tracker: zmq.MessageTracker | None
+else:
+    Header = t.Dict[str, t.Any]
+    MessageType = t.Dict[str, t.Any]
+
 # -----------------------------------------------------------------------------
 # utility functions
 # -----------------------------------------------------------------------------
@@ -269,22 +295,20 @@ class Message:
         return self.__dict__[k]
 
 
-def msg_header(
-    msg_id: str, msg_type: str, username: str, session: Session | str
-) -> dict[str, t.Any]:
+def msg_header(msg_id: str, msg_type: str, username: str, session: Session | str) -> Header:
     """Create a new message header"""
     date = utcnow()
     version = protocol_version
-    return locals()
+    return t.cast(Header, locals())
 
 
-def extract_header(msg_or_header: dict[str, t.Any]) -> dict[str, t.Any]:
+def extract_header(msg_or_header: Header | MessageType | None) -> Header | EmptyDict:
     """Given a message or header, return the header."""
     if not msg_or_header:
         return {}
     try:
         # See if msg_or_header is the entire message.
-        h = msg_or_header["header"]
+        h = msg_or_header["header"]  # type:ignore[typeddict-item]
     except KeyError:
         try:
             # See if msg_or_header is just the header
@@ -295,7 +319,7 @@ def extract_header(msg_or_header: dict[str, t.Any]) -> dict[str, t.Any]:
             h = msg_or_header
     if not isinstance(h, dict):
         h = dict(h)
-    return h
+    return h  # type:ignore[no-any-return]
 
 
 class Session(Configurable):
@@ -413,7 +437,7 @@ class Session(Configurable):
         config=True,
     )
 
-    metadata = Dict(
+    metadata: dict[str, t.Any] = Dict(  # type:ignore[assignment]
         {},
         config=True,
         help="Metadata dictionary, which serves as the default top-level metadata dict for each "
@@ -488,7 +512,7 @@ class Session(Configurable):
 
     # serialization traits:
 
-    pack = Any(default_packer)  # the actual packer function
+    pack: t.Callable[..., bytes] = Any(default_packer)  # type:ignore[assignment]  # the actual packer function
 
     @observe("pack")
     def _pack_changed(self, change: t.Any) -> None:
@@ -642,35 +666,39 @@ class Session(Configurable):
             self.pack = lambda o: pack(squash_dates(o))
             self.unpack = lambda s: unpack(s)
 
-    def msg_header(self, msg_type: str) -> dict[str, t.Any]:
+    def msg_header(self, msg_type: str) -> Header:
         """Create a header for a message type."""
         return msg_header(self.msg_id, msg_type, self.username, self.session)
 
     def msg(
         self,
         msg_type: str,
-        content: dict | None = None,
-        parent: dict[str, t.Any] | None = None,
-        header: dict[str, t.Any] | None = None,
+        content: dict[str, t.Any] | None = None,
+        parent: Header | None = None,
+        header: Header | None = None,
         metadata: dict[str, t.Any] | None = None,
-    ) -> dict[str, t.Any]:
+    ) -> MessageType:
         """Return the nested message dict.
 
         This format is different from what is sent over the wire. The
         serialize/deserialize methods converts this nested message dict to the wire
         format, which is a list of message parts.
         """
-        msg = {}
-        header = self.msg_header(msg_type) if header is None else header
-        msg["header"] = header
-        msg["msg_id"] = header["msg_id"]
-        msg["msg_type"] = header["msg_type"]
-        msg["parent_header"] = {} if parent is None else extract_header(parent)
-        msg["content"] = {} if content is None else content
-        msg["metadata"] = self.metadata.copy()
+
+        msg_header: Header = self.msg_header(msg_type) if header is None else header
+        parent_header = {} if parent is None else extract_header(parent)
+        msg_metadata = self.metadata.copy()
         if metadata is not None:
-            msg["metadata"].update(metadata)
-        return msg
+            msg_metadata.update(metadata)
+        return dict(  # noqa: C408
+            header=msg_header,
+            msg_id=msg_header["msg_id"],
+            msg_type=msg_header["msg_type"],
+            parent_header=parent_header,
+            content={} if content is None else content,
+            metadata=msg_metadata,
+            tracker=None,
+        )
 
     def sign(self, msg_list: list) -> bytes:
         """Sign a message with HMAC digest. If no auth, return b''.
@@ -689,7 +717,7 @@ class Session(Configurable):
 
     def serialize(
         self,
-        msg: dict[str, t.Any],
+        msg: MessageType,
         ident: list[bytes] | bytes | None = None,
     ) -> list[bytes]:
         """Serialize the message components to bytes.
@@ -754,15 +782,15 @@ class Session(Configurable):
     def send(
         self,
         stream: zmq.sugar.socket.Socket | ZMQStream | None,
-        msg_or_type: dict[str, t.Any] | str,
+        msg_or_type: MessageType | str,
         content: dict[str, t.Any] | None = None,
-        parent: dict[str, t.Any] | None = None,
+        parent: Header | None = None,
         ident: bytes | list[bytes] | None = None,
         buffers: list[bytes] | None = None,
         track: bool = False,
-        header: dict[str, t.Any] | None = None,
+        header: Header | None = None,
         metadata: dict[str, t.Any] | None = None,
-    ) -> dict[str, t.Any] | None:
+    ) -> MessageType | None:
         """Build and send a message via stream or socket.
 
         The message format used by this function internally is as follows:
@@ -818,8 +846,9 @@ class Session(Configurable):
             # We got a Message or message dict, not a msg_type so don't
             # build a new Message.
             msg = msg_or_type
-            buffers = buffers or msg.get("buffers", [])
+            buffers = buffers or msg.get("buffers", [])  # type:ignore[assignment]
         else:
+            assert isinstance(msg_or_type, str)
             msg = self.msg(
                 msg_or_type,
                 content=content,
@@ -916,7 +945,7 @@ class Session(Configurable):
         mode: int = zmq.NOBLOCK,
         content: bool = True,
         copy: bool = True,
-    ) -> tuple[list[bytes] | None, dict[str, t.Any] | None]:
+    ) -> tuple[list[bytes] | None, MessageType | None]:
         """Receive and unpack a message.
 
         Parameters
@@ -1024,7 +1053,7 @@ class Session(Configurable):
         msg_list: list[bytes] | list[zmq.Message],
         content: bool = True,
         copy: bool = True,
-    ) -> dict[str, t.Any]:
+    ) -> MessageType:
         """Unserialize a msg_list to a nested message dict.
 
         This is roughly the inverse of serialize. The serialize/deserialize
@@ -1096,7 +1125,7 @@ class Session(Configurable):
         # adapt to the current version
         return adapt(message)
 
-    def unserialize(self, *args: t.Any, **kwargs: t.Any) -> dict[str, t.Any]:
+    def unserialize(self, *args: t.Any, **kwargs: t.Any) -> MessageType:
         """**DEPRECATED** Use deserialize instead."""
         # pragma: no cover
         warnings.warn(

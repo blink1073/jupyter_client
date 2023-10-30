@@ -290,7 +290,7 @@ def openssh_tunnel(
             if tunnel.exitstatus:
                 raise RuntimeError("tunnel '%s' failed to start" % (cmd)) from e
             else:
-                return tunnel.pid
+                return tunnel.pid  # type:ignore[no-any-return]
         else:
             if failed:
                 warnings.warn("Password rejected, try again", stacklevel=2)

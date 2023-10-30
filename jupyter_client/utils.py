@@ -8,9 +8,11 @@ from __future__ import annotations
 import os
 from typing import Sequence
 
-from jupyter_core.utils import ensure_async, run_sync  # noqa: F401  # noqa: F401
+from jupyter_core.utils import ensure_async, run_sync
 
-from .session import utcnow  # noqa
+from .session import utcnow
+
+__all__ = ["ensure_async", "run_sync", "utcnow"]
 
 
 def _filefind(filename: str, path_dirs: str | Sequence[str] | None = None) -> str:

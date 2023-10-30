@@ -8,13 +8,16 @@ import re
 import socket
 import subprocess
 from subprocess import PIPE, Popen
-from typing import Any, Callable, Iterable, Sequence
+from typing import Any, Callable, Iterable, Sequence, TypeVar, cast
 from warnings import warn
 
 LOCAL_IPS: list = []
 PUBLIC_IPS: list = []
 
 LOCALHOST: str = ""
+
+
+FuncT = TypeVar("FuncT", bound=Callable[..., Any])
 
 
 def _uniq_stable(elems: Iterable) -> list:
@@ -46,7 +49,7 @@ def _get_output(cmd: str | Sequence[str]) -> str:
     return stdout.decode("utf8", "replace")
 
 
-def _only_once(f: Callable) -> Callable:
+def _only_once(f: FuncT) -> FuncT:
     """decorator to only run a function once"""
     f.called = False  # type:ignore[attr-defined]
 
@@ -57,17 +60,17 @@ def _only_once(f: Callable) -> Callable:
         f.called = True  # type:ignore[attr-defined]
         return ret
 
-    return wrapped
+    return cast(FuncT, wrapped)
 
 
-def _requires_ips(f: Callable) -> Callable:
+def _requires_ips(f: FuncT) -> FuncT:
     """decorator to ensure load_ips has been run before f"""
 
     def ips_loaded(*args: Any, **kwargs: Any) -> Any:
         _load_ips()
         return f(*args, **kwargs)
 
-    return ips_loaded
+    return cast(FuncT, ips_loaded)
 
 
 # subprocess-parsing ip finders

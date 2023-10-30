@@ -13,7 +13,7 @@ from jupyter_core.application import JupyterApp, base_aliases, base_flags
 from traitlets import Any, Dict, Float
 from traitlets.config import catch_config_error
 
-from . import __version__
+from ._version import __version__
 from .consoleapp import JupyterConsoleApp, app_aliases, app_flags
 
 OUTPUT_TIMEOUT = 10

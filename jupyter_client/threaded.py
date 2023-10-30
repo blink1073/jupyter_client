@@ -17,7 +17,7 @@ from zmq.eventloop import zmqstream
 
 from .channels import HBChannel
 from .client import KernelClient
-from .session import Session
+from .session import MessageType, Session
 
 # Local imports
 # import ZMQError in top-level namespace, to avoid ugly attribute-error messages
@@ -118,7 +118,7 @@ class ThreadedZMQSocketChannel:
                 pass
             self.socket = None
 
-    def send(self, msg: Dict[str, Any]) -> None:
+    def send(self, msg: MessageType) -> None:
         """Queue a message to be sent from the IOLoop's thread.
 
         Parameters
@@ -150,7 +150,7 @@ class ThreadedZMQSocketChannel:
             self._inspect(msg)  # type:ignore[unreachable]
         self.call_handlers(msg)
 
-    def call_handlers(self, msg: Dict[str, Any]) -> None:
+    def call_handlers(self, msg: MessageType) -> None:
         """This method is called in the ioloop thread when a message arrives.
 
         Subclasses should override this method to handle incoming messages.
@@ -345,7 +345,7 @@ class ThreadedKernelClient(KernelClient):
         if self._hb_channel is not None:
             # We don't have access to the KernelManager,
             # so we use the heartbeat.
-            return self._hb_channel.is_beating()
+            return self._hb_channel.is_beating()  # type:ignore[no-any-return]
         # no heartbeat and not local, we can't tell if it's running,
         # so naively return True
         return True

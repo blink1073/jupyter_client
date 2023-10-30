@@ -13,7 +13,7 @@ from jupyter_core.utils import ensure_async
 
 from ._version import protocol_version_info
 from .channelsabc import HBChannelABC
-from .session import Session
+from .session import MessageType, Session
 
 # import ZMQError in top-level namespace, to avoid ugly attribute-error messages
 # during garbage collection of threads at exit
@@ -214,13 +214,13 @@ class ZMQSocketChannel:
         self.socket: t.Optional[zmq.Socket] = socket
         self.session = session
 
-    def _recv(self, **kwargs: t.Any) -> t.Dict[str, t.Any]:
+    def _recv(self, **kwargs: t.Any) -> MessageType:
         assert self.socket is not None
         msg = self.socket.recv_multipart(**kwargs)
         ident, smsg = self.session.feed_identities(msg)
         return self.session.deserialize(smsg)
 
-    def get_msg(self, timeout: t.Optional[float] = None) -> t.Dict[str, t.Any]:
+    def get_msg(self, timeout: t.Optional[float] = None) -> MessageType:
         """Gets a message if there is one that is ready."""
         assert self.socket is not None
         if timeout is not None:
@@ -232,7 +232,7 @@ class ZMQSocketChannel:
         else:
             raise Empty
 
-    def get_msgs(self) -> t.List[t.Dict[str, t.Any]]:
+    def get_msgs(self) -> t.List[MessageType]:
         """Get all messages that are currently ready."""
         msgs = []
         while True:
@@ -262,7 +262,7 @@ class ZMQSocketChannel:
         """Test whether the channel is alive."""
         return self.socket is not None
 
-    def send(self, msg: t.Dict[str, t.Any]) -> None:
+    def send(self, msg: MessageType) -> None:
         """Pass a message to the ZMQ socket to send"""
         assert self.socket is not None
         self.session.send(self.socket, msg)
@@ -294,7 +294,7 @@ class AsyncZMQSocketChannel(ZMQSocketChannel):
             raise ValueError(msg)
         super().__init__(socket, session)
 
-    async def _recv(self, **kwargs: t.Any) -> t.Dict[str, t.Any]:  # type:ignore[override]
+    async def _recv(self, **kwargs: t.Any) -> MessageType:  # type:ignore[override]
         assert self.socket is not None
         msg = await self.socket.recv_multipart(**kwargs)
         _, smsg = self.session.feed_identities(msg)
@@ -302,7 +302,7 @@ class AsyncZMQSocketChannel(ZMQSocketChannel):
 
     async def get_msg(  # type:ignore[override]
         self, timeout: t.Optional[float] = None
-    ) -> t.Dict[str, t.Any]:
+    ) -> MessageType:
         """Gets a message if there is one that is ready."""
         assert self.socket is not None
         if timeout is not None:
@@ -314,7 +314,7 @@ class AsyncZMQSocketChannel(ZMQSocketChannel):
         else:
             raise Empty
 
-    async def get_msgs(self) -> t.List[t.Dict[str, t.Any]]:  # type:ignore[override]
+    async def get_msgs(self) -> t.List[MessageType]:  # type:ignore[override]
         """Get all messages that are currently ready."""
         msgs = []
         while True:

@@ -1,1 +1,3 @@
-from .client import AsyncKernelClient  # noqa
+from .client import AsyncKernelClient
+
+__all__ = ["AsyncKernelClient"]

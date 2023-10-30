@@ -336,7 +336,7 @@ class KernelClient(ConnectionFileMixin):
     @property
     def channels_running(self) -> bool:
         """Are any of the channels created and running?"""
-        return (
+        return bool(
             (self._shell_channel and self.shell_channel.is_alive())
             or (self._iopub_channel and self.iopub_channel.is_alive())
             or (self._stdin_channel and self.stdin_channel.is_alive())
@@ -509,7 +509,7 @@ class KernelClient(ConnectionFileMixin):
             stdin_hook = self._stdin_hook_default
         # detect IPython kernel
         if output_hook is None and "IPython" in sys.modules:
-            from IPython import get_ipython
+            from IPython import get_ipython  # type:ignore[attr-defined]
 
             ip = get_ipython()  # type:ignore[no-untyped-call]
             in_kernel = getattr(ip, "kernel", False)

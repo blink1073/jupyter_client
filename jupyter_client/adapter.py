@@ -1,11 +1,16 @@
 """Adapters for Jupyter msg spec versions."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
+
 import json
 import re
-from typing import Any, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, cast
 
 from ._version import protocol_version_info
+
+if TYPE_CHECKING:
+    from .session import MessageType
 
 
 def code_to_line(code: str, cursor_pos: int) -> Tuple[str, int]:
@@ -48,7 +53,7 @@ def extract_oname_v4(code: str, cursor_pos: int) -> str:
     line = _end_bracket.sub("", line)
     matches = _identifier.findall(line)
     if matches:
-        return matches[-1]
+        return cast(str, matches[-1])
     else:
         return ""
 
@@ -84,20 +89,20 @@ class Adapter:
         """
         return msg
 
-    def __call__(self, msg: Dict[str, Any]) -> Dict[str, Any]:
-        msg = self.update_header(msg)
+    def __call__(self, msg: Dict[str, Any] | MessageType) -> MessageType:
+        msg = self.update_header(msg)  # type:ignore[arg-type]
         msg = self.update_metadata(msg)
         msg = self.update_msg_type(msg)
         header = msg["header"]
 
         handler = getattr(self, header["msg_type"], None)
         if handler is None:
-            return msg
+            return msg  # type:ignore[return-value]
 
         # handle status=error replies separately (no change, at present)
         if msg["content"].get("status", None) in {"error", "aborted"}:
-            return self.handle_reply_status_error(msg)
-        return handler(msg)
+            return self.handle_reply_status_error(msg)  # type:ignore[return-value]
+        return handler(msg)  # type:ignore[no-any-return]
 
 
 def _version_str_to_list(version: str) -> List[int]:
@@ -390,7 +395,9 @@ class V4toV5(Adapter):
         return msg
 
 
-def adapt(msg: Dict[str, Any], to_version: int = protocol_version_info[0]) -> Dict[str, Any]:
+def adapt(
+    msg: Dict[str, Any] | MessageType, to_version: int = protocol_version_info[0]
+) -> MessageType:
     """Adapt a single message to a target version
 
     Parameters
@@ -420,7 +427,7 @@ def adapt(msg: Dict[str, Any], to_version: int = protocol_version_info[0]) -> Di
         from_version = 4
     adapter = adapters.get((from_version, to_version), None)
     if adapter is None:
-        return msg
+        return msg  # type:ignore[return-value]
     return adapter(msg)
 
 

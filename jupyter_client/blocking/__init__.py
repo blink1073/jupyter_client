@@ -1,1 +1,3 @@
-from .client import BlockingKernelClient  # noqa
+from .client import BlockingKernelClient
+
+__all__ = ["BlockingKernelClient"]

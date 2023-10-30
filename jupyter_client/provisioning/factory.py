@@ -12,7 +12,8 @@ if sys.version_info < (3, 10):  # pragma: no cover
 else:  # pragma: no cover
     from importlib.metadata import EntryPoint, entry_points
 
-from traitlets.config import SingletonConfigurable, Unicode, default
+from traitlets import Unicode, default
+from traitlets.config import SingletonConfigurable
 
 from .provisioner_base import KernelProvisionerBase
 

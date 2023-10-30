@@ -258,7 +258,7 @@ class KernelSpecManager(LoggingConfigurable):
             for f in files:
                 path = pjoin(kernel_dir, f)
                 if f.lower() == kernel_name and _is_kernel_dir(path):
-                    return path
+                    return path  # type:ignore[no-any-return]
 
         if kernel_name == NATIVE_KERNEL_NAME:
             try:
